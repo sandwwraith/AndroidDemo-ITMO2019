@@ -1,11 +1,13 @@
 package ru.ifmo.ctddev.startsev.demo
 
-import android.content.Context
-import android.provider.ContactsContract
+import com.squareup.moshi.Json
 
 class User(val firstName: String, val lastName: String)
 
-val usersList = (0..30).map {
-    User("First name #$it", "Last name #$it")
-}
+data class GitHubRepo(
+    val name: String,
+    val description: String? = "",
+    @Json(name = "stargazers_count") val starsCount: Int
+)
+
 

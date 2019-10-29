@@ -6,17 +6,17 @@ import android.view.View
 import android.view.ViewGroup
 import kotlinx.android.synthetic.main.list_item.view.*
 
-class ContactsVH(val root: View) : RecyclerView.ViewHolder(root) {
-    val userFirstNameText = root.user_firstname
-    val userLastNameText = root.user_lastname
+class ReposVH(val root: View) : RecyclerView.ViewHolder(root) {
+    val lastText = root.last_text
+    val firstText = root.first_text
 }
 
-class Contacts(val contacts: List<Contact>, val onClick: (Contact) -> Unit) : RecyclerView.Adapter<ContactsVH>() {
+class Repos(var contacts: List<GitHubRepo>, val onClick: (GitHubRepo) -> Unit) : RecyclerView.Adapter<ReposVH>() {
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int
-    ): ContactsVH {
-        val holder = ContactsVH(
+    ): ReposVH {
+        val holder = ReposVH(
             LayoutInflater.from(parent.context).inflate(
                 R.layout.list_item,
                 parent,
@@ -31,10 +31,8 @@ class Contacts(val contacts: List<Contact>, val onClick: (Contact) -> Unit) : Re
 
     override fun getItemCount(): Int = contacts.size
 
-    override fun onBindViewHolder(holder: ContactsVH, position: Int) {
-        holder.userFirstNameText.text = contacts[position].phoneNumber
-        holder.userLastNameText.text = contacts[position].name
+    override fun onBindViewHolder(holder: ReposVH, position: Int) {
+        holder.firstText.text = contacts[position].name
+        holder.lastText.text = contacts[position].description
     }
 }
-
-val a = Contacts(listOf(), {})

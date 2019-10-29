@@ -1,25 +1,19 @@
 package ru.ifmo.ctddev.startsev.demo
 
-import android.Manifest
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
-import android.os.PersistableBundle
-import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
-import okhttp3.*
-import java.io.IOException
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
-private const val myRequestId = 42
+
+private val LOG_TAG = "GitHub API"
 
 class MainActivity : AppCompatActivity() {
 
@@ -28,59 +22,37 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_CONTACTS
-            )
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this, // Контекст
-                arrayOf(Manifest.permission.READ_CONTACTS), // Что спрашиваем
-                myRequestId
-            ) // Пользовательская константа для уникальности запроса
-        } else {
-            setup()
-        }
+        setup()
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>, grantResults: IntArray
-    ) {
-        when (requestCode) {
-            myRequestId -> {
-                // grantResults пуст, если пользователь отменил диалог
-                // (но не согласился или отказался)
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // Победа
-                    setup()
-                } else {
-                    Toast.makeText(this, "Grant me permissions!", Toast.LENGTH_SHORT).show()
-                }
-                return
-            }
+    private lateinit var adapter: Repos
+
+    private fun setup() {
+        val viewManager = LinearLayoutManager(this)
+        adapter = Repos(emptyList()) {}
+        my_recycler_view.apply {
+            layoutManager = viewManager
+            adapter = this@MainActivity.adapter
+            setHasFixedSize(true)
         }
+        run()
     }
 
-    private val client = OkHttpClient()
-    private var call: Call? = null
+    private var call: Call<List<GitHubRepo>>? = null
 
     private fun run() {
-        val request = Request.Builder()
-            .get()
-            .url("https://api.github.com/users/sandwwraith/repos?sort=updated")
-            .addHeader("Accept", "application/json")
-            .build()
-
-        call = client.newCall(request)
-        call?.enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e("GitHub API", "Failed with", e)
+        call = MyApp.app.githubApi.getRepos("Kotlin")
+        call?.enqueue(object : Callback<List<GitHubRepo>> {
+            override fun onFailure(call: Call<List<GitHubRepo>>, t: Throwable) {
+                Log.e(LOG_TAG, "Failed with", t)
             }
 
-            override fun onResponse(call: Call, response: Response) {
-                Log.d("GitHub API", "Finished with ${response.code}, body: ${response.body?.charStream()?.readText()}")
+            override fun onResponse(call: Call<List<GitHubRepo>>, response: Response<List<GitHubRepo>>) {
+                Log.d(LOG_TAG, Thread.currentThread().name)
+                val body = response.body()
+                Log.d(LOG_TAG, "Finished with ${response.code()}, body: $body")
+                adapter.contacts = body ?: emptyList()
+                adapter.notifyDataSetChanged()
             }
         })
     }
@@ -89,24 +61,6 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         call?.cancel()
         call = null
-    }
-
-    private fun setup() {
-//        val contacts = fetchAllContacts()
-        run()
-        val contacts = (10..40).map { Contact("Ivan Ivanov", "+7 999 123 12 $it") }.shuffled()
-        val viewManager = LinearLayoutManager(this)
-        my_recycler_view.apply {
-            layoutManager = viewManager
-            adapter = Contacts(contacts) {
-                val sendIntent: Intent = Intent().apply {
-                    action = Intent.ACTION_DIAL
-                    data = Uri.parse("tel:${it.phoneNumber}")
-                }
-                startActivity(sendIntent)
-            }
-            setHasFixedSize(true)
-        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
